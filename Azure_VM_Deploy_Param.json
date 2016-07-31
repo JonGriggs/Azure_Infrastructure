@@ -1,0 +1,35 @@
+{
+"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+"contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": ""
+    },
+    "resourceGroup": {
+      "value": ""
+    },
+    "vmName": {
+      "value": ""
+    },
+    "vmSize": {
+      "value": ""
+    },
+    "adminPassword": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/YOUR-GUID-HERE/resourceGroups/KeyVault/providers/Microsoft.KeyVault/vaults/ProvisioningVault"
+        },
+        "secretName": "WinServerAdmin"
+      }
+    },
+    "VNetName": {
+      "value": ""
+    },
+    "Subnet": {
+      "value": ""
+    },
+    "StorageAccount": {
+      "value": ""
+    }
+  }
+ }
