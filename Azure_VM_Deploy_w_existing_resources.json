@@ -1,0 +1,123 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "type": "String"
+        },
+        "resourceGroup": {
+            "type": "String"
+        },
+        "vmName": {
+            "type": "String"
+        },
+        "vmSize": {
+            "type": "String"
+        },
+        "operatingSystem" : {
+            "type": "String"
+        },
+        "adminPassword": {
+            "type": "securestring"
+        },
+        "VNetName": {
+            "type": "String"
+        },
+        "Subnet": {
+            "type": "String"
+        },
+        "StorageAccount": {
+            "type": "String"
+        }
+    },
+    "variables": {
+        "nicName": "[concat(parameters('vmName'),'-NIC')]",
+        "vhdDefinition": "[concat('https://', parameters('StorageAccount'), '.blob.core.windows.net/vhds/', parameters('vmName'),'-OSDisk.vhd')]",
+        "BaseResourceGroup": "[replace(parameters('resourceGroup'),'-VMs','')]",
+        "Subnet": "[concat('/subscriptions/YOUR-GUID-HERE/resourceGroups/', variables('BaseResourceGroup'),'/providers/Microsoft.Network/virtualNetworks/', parameters('VNetName'), '/subnets/', parameters('Subnet'))]"
+        },
+    "resources": [
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "name": "[parameters('vmName')]",
+            "apiVersion": "2015-06-15",
+            "location": "[parameters('location')]",
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('vmSize')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "MicrosoftWindowsServer",
+                        "offer": "WindowsServer",
+                        "sku": "[parameters('operatingSystem')]",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "name": "[parameters('vmName')]",
+                        "createOption": "FromImage",
+                        "vhd": {
+                            "uri": "[variables('vhdDefinition')]"
+                        },
+                        "caching": "ReadWrite"
+                    },
+                    "dataDisks": []
+                },
+                "osProfile": {
+                    "computerName": "[parameters('vmName')]",
+                    "adminUsername": "masteradmin",
+                    "windowsConfiguration": {
+                        "provisionVMAgent": true,
+                        "enableAutomaticUpdates": true
+                    },
+                    "secrets": [],
+                    "adminPassword": "[parameters('adminPassword')]"
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
+                        }
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "name": "[variables('nicName')]",
+            "apiVersion": "2015-06-15",
+            "location": "[parameters('location')]",
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[variables('Subnet')]"
+                            }
+                        }
+                    }
+                ],
+                "dnsSettings": {
+                    "dnsServers": []
+                },
+                "enableIPForwarding": false
+            },
+            "dependsOn": []
+        }
+    ],
+    "outputs": {
+        "IP Address": {
+            "type": "String",
+            "value": "[reference(variables('nicName')).ipConfigurations[0].properties.PrivateIpAddress]"
+        },
+        "Admin Username": {
+            "type": "String",
+            "value": "[reference(parameters('vmName')).osProfile.adminUsername]"
+        }
+    }
+}
